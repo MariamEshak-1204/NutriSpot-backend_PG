@@ -1,3 +1,4 @@
+
 import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema({
@@ -21,6 +22,14 @@ const userSchema = new mongoose.Schema({
         type: String,
         enum: ["user", "admin"],
         default: "user",
+    },
+    googleId: {
+        type: String,      // جديد → لتخزين Google ID
+    },
+    provider: {
+        type: String,
+        enum: ["local", "google"],  // جديد → يحدد طريقة التسجيل
+        default: "local",
     }
 }, {
     timestamps: true,
