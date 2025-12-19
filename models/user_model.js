@@ -1,4 +1,3 @@
-
 import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema({
@@ -26,9 +25,12 @@ const userSchema = new mongoose.Schema({
     googleId: {
         type: String,      // جديد → لتخزين Google ID
     },
+    facebookId: {
+        type: String,      // جديد → لتخزين Facebook ID
+    },
     provider: {
         type: String,
-        enum: ["local", "google"],  // جديد → يحدد طريقة التسجيل
+        enum: ['local', 'google', 'facebook'],  // جديد → يحدد طريقة التسجيل
         default: "local",
     }
 }, {

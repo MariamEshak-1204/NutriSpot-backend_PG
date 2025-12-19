@@ -65,3 +65,120 @@ export const getAllUsers = asyncHandler(async (req, res) => {
     const users = await User.find({});
     res.status(200).json(users);
 });
+
+
+// --------------- Google Login -------------------
+
+import { OAuth2Client } from "google-auth-library";
+
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+export const googleLogin = async (req, res) => {
+    try {
+        const { token } = req.body;  // جاى من Postman
+
+        if (!token) {
+            return res.status(400).json({ message: "Token is required" });
+        }
+
+        // تحقق من الـ token
+        const ticket = await client.verifyIdToken({
+            idToken: token,
+            audience: process.env.GOOGLE_CLIENT_ID
+        });
+
+        const payload = ticket.getPayload();
+        const { email, name, picture, sub } = payload; // sub = Google unique ID
+
+        let user = await User.findOne({ email });
+
+               if (user) {
+            // المستخدم موجود → ممكن كان مسجل عادي
+            if (user.provider !== "google") {
+                user.provider = "google";
+                user.googleId = sub;
+                if (!user.profileImage) user.profileImage = picture;
+                await user.save();
+            }
+        } else {
+            // المستخدم جديد → إنشاء
+            user = await User.create({
+                userName: name,
+                email,
+                password: "GoogleLogin",
+                profileImage: picture,
+                provider: "google",
+                googleId: sub
+            });
+            console.log("New Google user created:", user);
+        }
+
+        // إنشاء JWT
+        const userToken = Jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+            expiresIn: "7d"
+        });
+
+        res.json({
+            message: "Login with Google successful",
+            token: userToken,
+            user
+        });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Google login failed" });
+    }
+};
+
+// --------------------- Facebook login -----------------------
+
+import axios from "axios";
+
+export const facebookLogin = async (req, res) => {
+  try {
+    const { accessToken } = req.body;
+
+    if (!accessToken) {
+      return res.status(400).json({ message: "Access token is required" });
+    }
+
+    const fbResponse = await axios.get(
+      "https://graph.facebook.com/me",
+      {
+        params: {
+          fields: "id,name,email",
+          access_token: accessToken,
+        },
+      }
+    );
+
+    const { id, name, email } = fbResponse.data;
+
+    let user = await User.findOne({ facebookId: id });
+
+    if (!user) {
+      user = await User.create({
+        name,
+        email,
+        facebookId: id,
+        provider: "facebook",
+      });
+    }
+
+    const token = Jwt.sign(
+      { id: user._id },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    res.json({
+      message: "Facebook login success",
+      token,
+      user,
+    });
+
+  } catch (error) {
+    res.status(401).json({ message: "Invalid Facebook token" });
+  }
+};
+
