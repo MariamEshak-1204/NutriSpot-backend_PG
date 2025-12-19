@@ -114,7 +114,7 @@ export const googleLogin = async (req, res) => {
         }
 
         // إنشاء JWT
-        const userToken = Jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+        const userToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
             expiresIn: "7d"
         });
 
@@ -165,7 +165,7 @@ export const facebookLogin = async (req, res) => {
       });
     }
 
-    const token = Jwt.sign(
+    const token = jwt.sign(
       { id: user._id },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
